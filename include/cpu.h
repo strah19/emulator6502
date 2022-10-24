@@ -11,6 +11,10 @@ typedef struct {
     uint8_t opcode;
     uint32_t clock_count;
     uint8_t cycles;
+
+    uint16_t fetched_address;
+    uint8_t fetched_data;
+
     Bus* bus;
 } Cpu;
 
@@ -35,23 +39,32 @@ typedef struct {
     uint8_t cycles;
 } Instruction;
 
-extern void cpu_init(Cpu* cpu);
+extern void cpu_init();
 
-extern void cpu_free(Cpu* cpu);
+extern void cpu_free();
 
-extern void cpu_connect_bus(Cpu* cpu, Bus* bus);
+extern void cpu_connect_bus(Bus* bus);
 
-extern void cpu_reset(Cpu* cpu);
+extern void cpu_reset();
 
-extern uint8_t cpu_read(Cpu* cpu, uint16_t address);
+extern uint8_t cpu_read(uint16_t address);
 
-extern void cpu_write(Cpu* cpu, uint16_t address, uint8_t data);
+extern void cpu_write(uint16_t address, uint8_t data);
 
-extern bool cpu_clock(Cpu* cpu);
+extern bool cpu_clock();
 
+extern void set_flag(CpuFlags flag, bool set);
+
+extern uint8_t get_flag(CpuFlags flag);
+
+extern Cpu* get_cpu();
+
+extern uint8_t fetch();
+ 
 extern uint8_t ILL();
-
+ 
 extern uint8_t MODE_IMP();
+extern uint8_t MODE_ACC();
 
 static Instruction instructions[] = {
 /* 0 */ { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 },

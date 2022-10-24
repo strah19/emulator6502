@@ -6,14 +6,13 @@ int main() {
     Bus bus;
     bus_init(&bus);
 
-    Cpu cpu;
-    cpu_init(&cpu);
-    cpu_connect_bus(&cpu, &bus);
+    cpu_init();
+    cpu_connect_bus(&bus);
 
     bus_write(&bus, 0xFFFC, 0x80);
     bus_write(&bus, 0xFFFD, 0x00);
 
-    cpu_reset(&cpu);
+    cpu_reset();
     
     //fill ram
     int p = 0x8000; 
@@ -22,12 +21,12 @@ int main() {
         p++;
     }
 
-    while (cpu.pc < RAM_SIZE) {
-        printf("PC: %#06x\n", cpu.pc);
-        cpu_clock(&cpu);
+    while (get_cpu()->pc < RAM_SIZE) {
+        printf("PC: %#06x\n", get_cpu()->pc);
+        cpu_clock();
     }
 
-    cpu_free(&cpu);
+    cpu_free();
     bus_free(&bus);
 
     return 0;
