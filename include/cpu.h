@@ -62,9 +62,24 @@ extern Cpu* get_cpu();
 extern uint8_t fetch();
  
 extern uint8_t ILL();
- 
-extern uint8_t MODE_IMP();
+
 extern uint8_t MODE_ACC();
+extern uint8_t MODE_IMP();
+extern uint8_t MODE_IMM();
+
+extern uint8_t MODE_ABS();
+extern uint8_t MODE_ZP();
+extern uint8_t MODE_REL();
+
+extern uint8_t MODE_IND();
+extern uint8_t MODE_ABSX();
+extern uint8_t MODE_ABSY();
+
+extern uint8_t MODE_ZPX();
+extern uint8_t MODE_ZPY();
+
+extern uint8_t MODE_INDINX();
+extern uint8_t MODE_INXIND();
 
 static Instruction instructions[] = {
 /* 0 */ { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 }, { "ILL", &MODE_IMP, &ILL, 7 },
