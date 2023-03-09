@@ -13,18 +13,24 @@ int main() {
     bus_write(&bus, 0xFFFD, 0x00);
 
     cpu_reset();
-    
+
     //fill ram
     int p = 0x8000; 
+    get_cpu()->a = 0x03;
+    bus_write(&bus, p++, 0x85);
+    bus_write(&bus, p++, 0x04);
+
     while (p < RAM_SIZE) {
-        bus_write(&bus, p, 0x00);
+        bus_write(&bus, p, 0xea);
         p++;
     }
 
+
     while (get_cpu()->pc < RAM_SIZE) {
-        printf("PC: %#06x\n", get_cpu()->pc);
+        //printf("PC: %#06x\n", get_cpu()->pc);
         cpu_clock();
     }
+    printf("Data at 0x04 is = %#06x\n", bus_read(&bus, 0x04));
 
     cpu_free();
     bus_free(&bus);
