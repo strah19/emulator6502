@@ -3,6 +3,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#define RESET_VECTOR 0xFFFC
+#define STACK_PTR_ADR 0x0100
+#define N_FLAG_MASK 0x80
+#define LOW_8_BIT_MASK 0x00FF
+#define HIGH_8_BIT_MASK 0xFF00
+
 static Cpu* cpu;
 
 void cpu_init() {
@@ -23,8 +29,9 @@ void cpu_init() {
 }
 
 void cpu_reset() {
-    uint8_t high = cpu_read(0xFFFC);
-    uint8_t low = cpu_read(0xFFFD);
+    uint8_t low = cpu_read(RESET_VECTOR);
+    uint8_t high = cpu_read(RESET_VECTOR + 1);
+
     cpu->pc = (high << 8) | low;
     cpu->a = 0x00;
     cpu->x = 0x00;
@@ -129,7 +136,7 @@ uint8_t MODE_ABX() {
 
     cpu->fetched_address = ((high_byte << 8) | low_byte) + cpu->x;
 
-    if ((0xFF00 & cpu->fetched_address) != (high_byte << 8))
+    if ((HIGH_8_BIT_MASK & cpu->fetched_address) != (high_byte << 8))
         return 0x01;
     return 0x00;
 }
@@ -141,7 +148,7 @@ uint8_t MODE_ABY() {
 
     cpu->fetched_address = ((high_byte << 8) | low_byte) + cpu->y;
 
-    if ((0xFF00 & cpu->fetched_address) != (high_byte << 8))
+    if ((HIGH_8_BIT_MASK & cpu->fetched_address) != (high_byte << 8))
         return 0x01;
     return 0x00; 
 }
@@ -149,7 +156,7 @@ uint8_t MODE_ABY() {
 // This takes the next byte and assumes that address is in the zero page.
 uint8_t MODE_ZP() {
     cpu->fetched_address = cpu_read(cpu->pc++);
-    cpu->fetched_address &= 0x00FF;
+    cpu->fetched_address &= LOW_8_BIT_MASK;
  
     return 0x00;
 }
@@ -157,7 +164,7 @@ uint8_t MODE_ZP() {
 // Same as zero page but adds the X register.
 uint8_t MODE_ZPX() {
     cpu->fetched_address = cpu_read(cpu->pc++) + cpu->x;
-    cpu->fetched_address &= 0x00FF;
+    cpu->fetched_address &= LOW_8_BIT_MASK;
 
     return 0x00;
 }
@@ -165,7 +172,7 @@ uint8_t MODE_ZPX() {
 // Same as zero page but adds the Y register.
 uint8_t MODE_ZPY() {
     cpu->fetched_address = cpu_read(cpu->pc++) + cpu->y;
-    cpu->fetched_address &= 0x00FF;
+    cpu->fetched_address &= LOW_8_BIT_MASK;
 
     return 0x00;
 }
@@ -173,7 +180,7 @@ uint8_t MODE_ZPY() {
 // The next byte is added to the current program counter.
 uint8_t MODE_REL() {
     cpu->fetched_address = cpu_read(cpu->pc++);
-    cpu->fetched_address &= 0x00FF;
+    cpu->fetched_address &= LOW_8_BIT_MASK;
 
     cpu->fetched_address = cpu->pc + cpu->fetched_address;
 }
@@ -242,7 +249,7 @@ uint8_t TAX() {
     cpu->x = cpu->a;
 
     set_flag(Z, cpu->x == 0x00);
-    set_flag(N, cpu->x & 0x80);
+    set_flag(N, cpu->x & N_FLAG_MASK);
 
     return 0x00;
 }
@@ -251,7 +258,7 @@ uint8_t TAY() {
     cpu->y = cpu->a;
 
     set_flag(Z, cpu->y == 0x00);
-    set_flag(N, cpu->y & 0x80);
+    set_flag(N, cpu->y & N_FLAG_MASK);
 
     return 0x00;
 }
@@ -269,7 +276,7 @@ uint8_t TXA() {
     cpu->a = cpu->x;
 
     set_flag(Z, cpu->a == 0x00);
-    set_flag(N, cpu->a & 0x80);
+    set_flag(N, cpu->a & N_FLAG_MASK);
 
     return 0x00;
 }
@@ -278,7 +285,7 @@ uint8_t TXS() {
     cpu->sp = cpu->x;
 
     set_flag(Z, cpu->sp == 0x00);
-    set_flag(N, cpu->sp & 0x80);
+    set_flag(N, cpu->sp & N_FLAG_MASK);
 
     return 0x00;
 }
@@ -287,7 +294,93 @@ uint8_t TYA() {
     cpu->a = cpu->y;
 
     set_flag(Z, cpu->a == 0x00);
-    set_flag(N, cpu->a & 0x80);
+    set_flag(N, cpu->a & N_FLAG_MASK);
 
+    return 0x00;
+}
+
+uint8_t ORA() {
+    cpu->a = cpu->a | fetch();
+
+    set_flag(Z, cpu->a == 0x00);
+    set_flag(N, cpu->a & N_FLAG_MASK);
+
+    return 0x00; 
+}
+
+uint8_t PHA() {
+    cpu_write(STACK_PTR_ADR + cpu->sp--, cpu->a);
+}
+
+uint8_t PHP() {
+    cpu_write(STACK_PTR_ADR + cpu->sp--, cpu->status);
+
+    set_flag(B, true);
+    set_flag(C, true);
+
+    return 0x00;
+}
+
+uint8_t PLA() {
+    cpu->sp++;
+    cpu->a = cpu_read(STACK_PTR_ADR + cpu->sp);
+
+    set_flag(Z, cpu->a == 0x00);
+    set_flag(N, cpu->a & N_FLAG_MASK);
+
+    return 0x00;
+}
+
+uint8_t PLP() {
+    cpu->sp++;
+    uint8_t stat = cpu_read(STACK_PTR_ADR + cpu->sp);
+    cpu->status = (stat & 0x11001111);  //The U and B flags are ignored.
+
+    return 0x00;
+}
+
+uint8_t ROL() {
+    uint16_t data = fetch();
+    data = (uint16_t)(data << 1) | get_flag(C);
+
+    set_flag(Z, (data & 0x00FF) == 0x0000);
+    set_flag(N, data & N_FLAG_MASK);
+    set_flag(C, (data & 0xFF00));
+
+    if (instructions[cpu->opcode].address_mode == &MODE_ACC)
+        cpu->a = data;
+    else
+        cpu_write(cpu->fetched_address, data);
+
+    return 0x00;
+}
+
+uint8_t ROR() {
+    uint16_t data = fetch();
+    data = (uint16_t)(data >> 1) | get_flag(C);
+
+    set_flag(Z, (data & 0x00FF) == 0x0000);
+    set_flag(N, data & N_FLAG_MASK);
+    set_flag(C, (data & 0xFF00));
+
+    if (instructions[cpu->opcode].address_mode == &MODE_ACC)
+        cpu->a = data;
+    else
+        cpu_write(cpu->fetched_address, data);
+
+    return 0x00;
+}
+
+uint8_t RTI() {
+    cpu->sp++;
+    uint8_t stat = cpu_read(STACK_PTR_ADR + cpu->sp);
+    cpu->status = (stat & 0x11001111);  //The U and B flags are ignored.
+
+    cpu->sp++;
+    uint8_t low = cpu_read(STACK_PTR_ADR + cpu->sp);
+    cpu->sp++;
+    uint8_t high = cpu_read(STACK_PTR_ADR + cpu->sp);
+
+    cpu->pc = ((high << 8) | low);
     return 0x00;
 }

@@ -17,8 +17,8 @@ int main() {
     //fill ram
     int p = 0x8000; 
     get_cpu()->a = 0x03;
-    bus_write(&bus, p++, 0x85);
-    bus_write(&bus, p++, 0x04);
+    bus_write(&bus, p++, 0x2a);
+   // bus_write(&bus, p++, 0x04);
 
     while (p < RAM_SIZE) {
         bus_write(&bus, p, 0xea);
@@ -30,7 +30,7 @@ int main() {
         //printf("PC: %#06x\n", get_cpu()->pc);
         cpu_clock();
     }
-    printf("Data at 0x04 is = %#06x\n", bus_read(&bus, 0x04));
+    printf("A register = %#06x\n", get_cpu()->a);
 
     cpu_free();
     bus_free(&bus);
