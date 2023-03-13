@@ -224,27 +224,43 @@ uint8_t NOP() {
     return 0x00;
 }
 
+// Load memory into a register.
 uint8_t LDA() {
-    uint8_t data = fetch();
-    cpu->a = data;
+    cpu->a = fetch();
     return 0x00;
 }
 
+// Load memory into x register.
+uint8_t LDX() {
+    cpu->x = fetch();
+    return 0x00;
+}
+
+//Load memory into y register.
+uint8_t LDY() {
+    cpu->y = fetch();
+    return 0x00;
+}
+
+//Store a register in memory.
 uint8_t STA() {
     cpu_write(cpu->fetched_address, cpu->a);
     return 0x00;
 }
 
+//Store x register in memory.
 uint8_t STX() {
     cpu_write(cpu->fetched_address, cpu->x);
     return 0x00;
 }
 
+//Store y register in memory.
 uint8_t STY() {
     cpu_write(cpu->fetched_address, cpu->y);
     return 0x00;
 }
 
+//Transer a register into x register.
 uint8_t TAX() {
     cpu->x = cpu->a;
 
@@ -254,6 +270,7 @@ uint8_t TAX() {
     return 0x00;
 }
 
+//Transer a register into y register.
 uint8_t TAY() {
     cpu->y = cpu->a;
 
@@ -263,6 +280,7 @@ uint8_t TAY() {
     return 0x00;
 }
 
+//Transer stack pointer into x register.
 uint8_t TSX() {
     cpu->x = cpu->sp;
 
@@ -272,6 +290,7 @@ uint8_t TSX() {
     return 0x00;
 }
 
+//Transer x register into a register.
 uint8_t TXA() {
     cpu->a = cpu->x;
 
@@ -281,6 +300,7 @@ uint8_t TXA() {
     return 0x00;
 }
 
+//Transer x register into stack pointer.
 uint8_t TXS() {
     cpu->sp = cpu->x;
 
@@ -290,6 +310,7 @@ uint8_t TXS() {
     return 0x00;
 }
 
+//Transer y register into a register.
 uint8_t TYA() {
     cpu->a = cpu->y;
 
@@ -299,6 +320,7 @@ uint8_t TYA() {
     return 0x00;
 }
 
+//Complete OR operation on a register and memory.
 uint8_t ORA() {
     cpu->a = cpu->a | fetch();
 
@@ -382,5 +404,310 @@ uint8_t RTI() {
     uint8_t high = cpu_read(STACK_PTR_ADR + cpu->sp);
 
     cpu->pc = ((high << 8) | low);
+    return 0x00;
+}
+
+//Clear the carry flag.
+uint8_t CLC() {
+    set_flag(C, false);
+    return 0x00;
+}
+
+//Clear decimal mode flag.
+uint8_t CLD() {
+    set_flag(D, false);
+    return 0x00;
+}
+
+//Clear interrupt flag.
+uint8_t CLI() {
+    set_flag(I, false);
+    return 0x00;
+}
+
+//Clear overflow flag.
+uint8_t CLV() {
+    set_flag(V, false);
+    return 0x00;
+}
+
+//Set carry flag.
+uint8_t SEC() {
+    set_flag(C, true);
+    return 0x00;
+}
+
+//Set decimal mode flag.
+uint8_t SED() {
+    set_flag(D, true);
+    return 0x00;
+}
+
+//Set interrupt flag.
+uint8_t SEI() {
+    set_flag(I, true);
+    return 0x00;
+}
+
+uint8_t DEC() {
+    uint8_t data = fetch();
+    data--;
+
+    set_flag(Z, (data == 0x00));
+    set_flag(N, (N_FLAG_MASK & data));
+
+    cpu_write(cpu->fetched_address, data);
+    return 0x00;
+}
+
+uint8_t DEX() {
+    cpu->x--;
+
+    set_flag(Z, (cpu->x == 0x00));
+    set_flag(N, (N_FLAG_MASK & cpu->x));
+    return 0x00;
+}
+
+uint8_t DEY() {
+    cpu->y--;
+
+    set_flag(Z, (cpu->y == 0x00));
+    set_flag(N, (N_FLAG_MASK & cpu->y));
+    return 0x00;
+}
+
+uint8_t INC() {
+    uint8_t data = fetch();
+    data++;
+
+    set_flag(Z, (data == 0x00));
+    set_flag(N, (N_FLAG_MASK & data));
+
+    cpu_write(cpu->fetched_address, data);
+    return 0x00;
+} 
+
+uint8_t INX() {
+    cpu->x++;
+
+    set_flag(Z, (cpu->x == 0x00));
+    set_flag(N, (N_FLAG_MASK & cpu->x));
+    return 0x00;
+} 
+
+uint8_t INY() {
+    cpu->y++;
+
+    set_flag(Z, (cpu->y == 0x00));
+    set_flag(N, (N_FLAG_MASK & cpu->y));
+    return 0x00;
+}
+
+uint8_t AND() {
+    cpu->a &= fetch();
+
+    set_flag(Z, cpu->a == 0x00);
+    set_flag(N, cpu->a & N_FLAG_MASK);
+    return 0x00;
+} 
+
+uint8_t EOR() {
+    cpu->a ^= fetch();
+    
+    set_flag(Z, cpu->a == 0x00);
+    set_flag(N, cpu->a & N_FLAG_MASK);
+    return 0x00;
+}
+
+uint8_t ASL() {
+    uint16_t data = fetch();
+    data = (uint16_t)data << 1;
+
+    set_flag(Z, (data & 0x00FF) == 0x0000);
+    set_flag(N, (N_FLAG_MASK & data));
+    set_flag(C, (data & 0xFF00));
+
+    if (instructions[cpu->opcode].address_mode == &MODE_ACC)
+        cpu->a = data;
+    else
+        cpu_write(cpu->fetched_address, data);
+
+    return 0x00;
+}
+
+uint8_t LSR() {
+    uint16_t data = fetch();
+    data = (uint16_t)data >> 1;
+
+    set_flag(Z, (data & 0x00FF) == 0x0000);
+    set_flag(N, false);
+    set_flag(C, (data & 0xFF00));
+
+    if (instructions[cpu->opcode].address_mode == &MODE_ACC)
+        cpu->a = data;
+    else
+        cpu_write(cpu->fetched_address, data);
+
+    return 0x00;
+}
+
+uint8_t ADC() {
+    uint16_t data = cpu->a + fetch() + (uint16_t) get_flag(C);
+    set_flag(C, (data & 0x0100));
+    set_flag(N, (data & N_FLAG_MASK));
+    set_flag(Z, ((data & 0x00FF) == 0x00));
+
+    set_flag(V, (~((cpu->a ^ fetch()) & (cpu->a & data)) & 0x0080));
+
+
+    cpu->a = (data & 0x00FF);
+
+    return 0x00;
+}
+
+uint8_t SBC() {
+    uint16_t fetched = fetch();
+    fetched = (fetched ^ 0x00FF) + 1; //This gives me the two's complement 
+
+    uint16_t data = cpu->a + fetched + (uint16_t) get_flag(C);
+    set_flag(C, (data & 0x0100));
+    set_flag(N, (data & N_FLAG_MASK));
+    set_flag(Z, ((data & 0x00FF) == 0x00));
+
+    set_flag(V, (~((cpu->a ^ fetch()) & (cpu->a & data)) & 0x0080));
+
+
+    cpu->a = (data & 0x00FF);
+
+    return 0x00;
+}
+
+uint8_t CMP() {
+    set_flag(N, (cpu->a < fetch()));
+    set_flag(Z, (cpu->a == fetch()));
+    set_flag(C, (cpu->a == fetch() || cpu->a > fetch()));
+
+    return 0x00;
+}
+
+uint8_t CPX() {
+    set_flag(N, (cpu->x < fetch()));
+    set_flag(Z, (cpu->x == fetch()));
+    set_flag(C, (cpu->x == fetch() || cpu->x > fetch()));
+
+    return 0x00;
+}
+
+uint8_t CPY() {
+    set_flag(N, (cpu->y < fetch()));
+    set_flag(Z, (cpu->y == fetch()));
+    set_flag(C, (cpu->y == fetch() || cpu->y > fetch()));
+
+    return 0x00;
+}
+
+uint8_t BIT() {
+    set_flag(N, fetch() & N_FLAG_MASK);
+    set_flag(V, fetch() & 0x40);
+    set_flag(Z, (fetch() & cpu->a) == 0x00);
+
+    return 0x00;
+}
+
+uint8_t JMP() {
+    cpu->pc = cpu->fetched_address;
+    return 0x00;
+}
+
+uint8_t BCC() {
+    if (get_flag(C) == 0)
+        cpu->pc = cpu->fetched_address;
+
+    return 0x00;
+}
+
+uint8_t BCS() {
+    if (get_flag(C) == 1)
+        cpu->pc = cpu->fetched_address;
+
+    return 0x00;
+} 
+
+uint8_t BEQ() {
+    if (get_flag(Z) == 1)
+        cpu->pc = cpu->fetched_address;
+
+    return 0x00;
+} 
+
+uint8_t BMI() {
+    return 0x00;
+}
+
+uint8_t BNE() {
+    if (get_flag(N) == 1)
+        cpu->pc = cpu->fetched_address;
+
+    return 0x00;
+} 
+
+uint8_t BPL() {
+    if (get_flag(N) == 0)
+        cpu->pc = cpu->fetched_address;
+
+    return 0x00;
+} 
+
+uint8_t BVS() {
+    if (get_flag(V) == 1)
+        cpu->pc = cpu->fetched_address;
+
+    return 0x00;
+} 
+
+uint8_t BVC() {
+    if (get_flag(V) == 0)
+        cpu->pc = cpu->fetched_address;
+
+    return 0x00;
+}
+
+uint8_t BRK() {
+    set_flag(I, true);
+
+    cpu->pc++;
+    cpu_write(STACK_PTR_ADR + cpu->sp, (cpu->pc << 8) & 0x00FF);
+    cpu->sp--;
+    cpu_write(STACK_PTR_ADR + cpu->sp, (cpu->sp & 0x00FF));
+    cpu->sp--;
+
+    set_flag(B, true);
+    cpu_write(STACK_PTR_ADR + cpu->sp, cpu->status);
+    cpu->sp--;
+    set_flag(B, false);
+    return 0x00;
+}
+
+uint8_t RTS() {
+    cpu->sp++;
+    uint8_t low = cpu_read(STACK_PTR_ADR + cpu->sp);
+    cpu->sp++;
+    uint8_t high = cpu_read(STACK_PTR_ADR + cpu->sp);
+    cpu->pc = (high << 8) | low;
+
+    low = cpu_read(RESET_VECTOR);
+    high = cpu_read(RESET_VECTOR + 1);
+
+    cpu->pc = (high << 8) | low;
+    return 0x00;
+} 
+
+uint8_t JSR() {
+    cpu->pc--;
+    cpu_write(STACK_PTR_ADR + cpu->sp, (cpu->pc >> 8) & 0x00FF);
+    cpu->sp--;
+    cpu_write(STACK_PTR_ADR + cpu->sp, (cpu->pc & 0x00FF));
+    cpu->sp--;
+    cpu->pc = cpu->fetched_address;
     return 0x00;
 }
