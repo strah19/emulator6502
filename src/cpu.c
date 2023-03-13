@@ -78,6 +78,26 @@ bool cpu_clock() {
     return executed;
 }
 
+void irq() {
+    if (get_flag(I) == 0) {
+        set_flag(I, true);
+
+        cpu_write(STACK_PTR_ADR + cpu->sp, (cpu->pc >> 8) & 0x00FF);
+        cpu->sp--;
+        cpu_write(STACK_PTR_ADR + cpu->sp, (cpu->pc & 0x00FF));
+        cpu->sp--;
+
+        cpu_write(STACK_PTR_ADR + cpu->sp, cpu->status);
+        cpu->sp--;
+
+        cpu->fetched_address = 
+    }
+}
+
+void nmi() {
+
+}
+
 uint8_t cpu_read(uint16_t address) {
     return bus_read(cpu->bus, address);
 }

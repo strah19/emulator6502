@@ -84,6 +84,9 @@ extern uint8_t BCC(); extern uint8_t BCS(); extern uint8_t BEQ(); extern uint8_t
 extern uint8_t BNE(); extern uint8_t BPL(); extern uint8_t BVS(); extern uint8_t BVC();
 extern uint8_t BRK();
 
+extern void irq();
+extern void nmi();
+
 extern uint8_t MODE_ACC();
 extern uint8_t MODE_IMP();
 extern uint8_t MODE_IMM();
