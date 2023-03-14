@@ -4,6 +4,8 @@
 #include <string.h>
 
 #define RESET_VECTOR 0xFFFC
+#define IRQ_VECTOR 0xFFFE
+#define NMI_VECTOR 0xFFFA
 #define STACK_PTR_ADR 0x0100
 #define N_FLAG_MASK 0x80
 #define LOW_8_BIT_MASK 0x00FF
@@ -81,6 +83,7 @@ bool cpu_clock() {
 void irq() {
     if (get_flag(I) == 0) {
         set_flag(I, true);
+        set_flag(B, false);
 
         cpu_write(STACK_PTR_ADR + cpu->sp, (cpu->pc >> 8) & 0x00FF);
         cpu->sp--;
@@ -90,12 +93,25 @@ void irq() {
         cpu_write(STACK_PTR_ADR + cpu->sp, cpu->status);
         cpu->sp--;
 
-        cpu->fetched_address = 
+        cpu->fetched_address = (cpu_read(IRQ_VECTOR + 1) << 8) | cpu_read(IRQ_VECTOR);
+        cpu->cycles = 7;
     }
 }
 
 void nmi() {
+    set_flag(I, true);
+    set_flag(B, false);
 
+    cpu_write(STACK_PTR_ADR + cpu->sp, (cpu->pc >> 8) & 0x00FF);
+    cpu->sp--;
+    cpu_write(STACK_PTR_ADR + cpu->sp, (cpu->pc & 0x00FF));
+    cpu->sp--;
+
+    cpu_write(STACK_PTR_ADR + cpu->sp, cpu->status);
+    cpu->sp--;
+
+    cpu->fetched_address = (cpu_read(IRQ_VECTOR + 1) << 8) | cpu_read(IRQ_VECTOR);
+    cpu->cycles = 8;
 }
 
 uint8_t cpu_read(uint16_t address) {
