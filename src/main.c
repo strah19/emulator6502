@@ -5,8 +5,11 @@
 #include "../include/bus.h"
 #include "../include/cpu.h"
 
+#define PC_START 0x8000
+
 FILE* rom = NULL;
 Bus bus;
+uint16_t program_end = 0x00;
 
 void close_rom();
 
@@ -22,29 +25,26 @@ void load_rom(const char* filepath) {
     }
 
     fseek(rom, 0L, SEEK_END);
-    int size = ftell(rom);
+    program_end = ftell(rom) + PC_START;
     fseek(rom, 0L, SEEK_SET);
 
     char buf[4];
     uint16_t i = 0;
     while (fscanf(rom, "%s", buf) != EOF) {
         uint8_t data = (int)strtol(buf, NULL, 0);
-        bus_write(&bus, i, data);
+        bus_write(&bus, PC_START + i, data);
         i++;
     }
 }
 
-bool same_16_bytes(int addr) {
-    for (int j = 0; j < 16; j++) {
-        if (bus_read(&bus, addr + j) == bus_read(&bus, addr + j + 16)) continue;
-        return false;
-    }  
-}
-
-void print_rom() {
-    for (int i = 0; i < 0xFFFF; i += 16) {
+void print_rom(uint16_t start, uint16_t end) {
+    for (int i = start; i < end; i += 16) {
+        printf("0x%04x |", i);
         for (int j = 0; j < 16; j++) {
-            printf(" %d ", bus_read(&bus, i + j));
+            printf(" 0x%02x ", bus_read(&bus, i + j));
+
+            if (j == 7)
+                printf("|");
         }
         printf("\n");
     }
@@ -54,41 +54,36 @@ void close_rom() {
     fclose(rom);
 }
 
-int main() {
+int main(int argc, char* argv[]) {
     bus_init(&bus);
     
-    load_rom("test.txt");
-    print_rom();
+    if (!argv[1]) {
+        printf("Must enter a file to be run...\n");
+        exit(EXIT_FAILURE);
+    }
+    load_rom(argv[1]);
 
     cpu_init();
     cpu_connect_bus(&bus);
 
-    bus_write(&bus, 0xFFFC, 0x00);
-    bus_write(&bus, 0xFFFD, 0x80);
+    bus_write(&bus, 0xFFFC, (PC_START & 0x00FF));
+    bus_write(&bus, 0xFFFD, (PC_START >> 8));
 
     cpu_reset();
 
-    //fill ram
-    int p = 0x8000; 
-    get_cpu()->a = 0x01;
-    bus_write(&bus, p++, 0x69);
-    bus_write(&bus, p++, 0x02);
-
-    while (p < RAM_SIZE) {
-        bus_write(&bus, p, 0xea);
-        p++;
-    }
-
-
-        printf("PC: %#06x\n", get_cpu()->pc);
-    while (get_cpu()->pc < RAM_SIZE) {
-       // printf("PC: %#06x\n", get_cpu()->pc);
+    while (get_cpu()->pc < program_end) {
         cpu_clock();
     }
-    printf("A register = %#06x\n", get_cpu()->a);
+
+    printf("A register = 0x%02x\n", get_cpu()->a);
+    printf("X register = 0x%02x\n", get_cpu()->x);
+    printf("Y register = 0x%02x\n", get_cpu()->y);
+    printf("Staus register = 0x%02x\n", get_cpu()->status);
+    printf("PC = 0x%04x\n", get_cpu()->pc);
 
     cpu_free();
     bus_free(&bus);
+    close_rom();
 
     return 0;
 }

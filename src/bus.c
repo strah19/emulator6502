@@ -10,7 +10,7 @@ void bus_init(Bus* bus) {
         fprintf(stderr, "Unable to allocate memory for ram.\n");
         exit(EXIT_FAILURE);
     }
-    memset(bus->ram, sizeof(uint8_t) * RAM_SIZE, 0);
+    memset(bus->ram, 0, sizeof(uint8_t) * RAM_SIZE);
 }
 
 void bus_free(Bus* bus) {
