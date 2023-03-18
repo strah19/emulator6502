@@ -37,6 +37,7 @@ void load_rom(const char* filepath) {
 bool same_16_bytes(int addr) {
     for (int j = 0; j < 16; j++) {
         if (bus_read(&bus, addr + j) == bus_read(&bus, addr + j + 16)) continue;
+        return false;
     }  
 }
 
