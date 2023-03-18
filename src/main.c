@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include "../include/bus.h"
 #include "../include/cpu.h"
 
@@ -33,6 +34,21 @@ void load_rom(const char* filepath) {
     }
 }
 
+bool same_16_bytes(int addr) {
+    for (int j = 0; j < 16; j++) {
+        if (bus_read(&bus, addr + j) == bus_read(&bus, addr + j + 16)) continue;
+    }  
+}
+
+void print_rom() {
+    for (int i = 0; i < 0xFFFF; i += 16) {
+        for (int j = 0; j < 16; j++) {
+            printf(" %d ", bus_read(&bus, i + j));
+        }
+        printf("\n");
+    }
+}
+
 void close_rom() {
     fclose(rom);
 }
@@ -41,6 +57,7 @@ int main() {
     bus_init(&bus);
     
     load_rom("test.txt");
+    print_rom();
 
     cpu_init();
     cpu_connect_bus(&bus);
